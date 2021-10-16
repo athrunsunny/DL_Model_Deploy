@@ -54,10 +54,7 @@ def getDataset(path):
             label.append(files)
             label_n.append(index)
         label_dict[index] = files
-    # 输出当前的数据
-    # print(len(image))
-    # print(len(label))
-    # 随机打乱数据集顺序
+
     image_len = len(image)
     index = np.arange(image_len)
     np.random.shuffle(index)
