@@ -7,6 +7,8 @@ from torch.utils.data import DataLoader
 import argparse
 from DataLoader import getDataset, Trainset
 
+USE_DEFAULT_MODEL = True
+
 
 ##################################################
 # define Net class
@@ -47,7 +49,10 @@ def train(args, model, device, trainloader, optimizer, epoch):
         optimizer.zero_grad()
         output = model(data)
         target = target.long()
-        loss = F.nll_loss(output, target)
+        if USE_DEFAULT_MODEL:
+            loss = criterion(output, target)
+        else:
+            loss = F.nll_loss(output, target)
         loss.backward()
         optimizer.step()
         if batch_idx % args.log_interval == 0:
@@ -68,7 +73,10 @@ def test(model, device, testloader):
             data, target = data.to(device), target.to(device)
             output = model(data)
             target = target.long()
-            test_loss += F.nll_loss(output, target, reduction='sum').item()  # sum up batch loss
+            if USE_DEFAULT_MODEL:
+                test_loss += criterion(output, target).sum().item()
+            else:
+                test_loss += F.nll_loss(output, target, reduction='sum').item()  # sum up batch loss
             pred = output.max(1, keepdim=True)[1]  # get the index of the max log-probability
             correct += pred.eq(target.view_as(pred)).sum().item()
 
@@ -118,7 +126,13 @@ if __name__ == '__main__':
     testloader = DataLoader(test_data, batch_size=100, shuffle=True)
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    model = Net().to(device)
+    if USE_DEFAULT_MODEL:
+        from torchvision.models.resnet import resnet18
+
+        model = resnet18(pretrained=True).to(device)
+        criterion = nn.CrossEntropyLoss()
+    else:
+        model = Net().to(device)
     optimizer = optim.SGD(model.parameters(), lr=args.lr, momentum=args.momentum)
 
     # start train epoch
